@@ -19,3 +19,13 @@
     }
   ]
 }
+// This task will automatically add, commit, and push changes to the GitHub repository
+// whenever you run it. You can run it manually or set up a trigger to run it
+// periodically or on file changes using an extension like "Run on Save" or "Auto Run Command".
+//// Make sure to configure your Git credentials and repository URL before using this task.
+// You can also modify the commit message as needed.
+// Note: This task assumes you have Git installed and configured on your system.
+// If you want to run this task automatically on file save, consider using an extension like "Run on Save" or "Auto Run Command" in VSCode.
+// You can also set up a cron job or a scheduled task in your operating system to run this command periodically.
+// Ensure you have the necessary permissions to push to the repository.
+// If you encounter any issues, check your Git configuration and ensure you have the correct access rights
