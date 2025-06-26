@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Werkzeug
+PyPDF2
+pdf2image
+reportlab
+Pillow
+pdfplumber
+python-docx
+docx2pdf

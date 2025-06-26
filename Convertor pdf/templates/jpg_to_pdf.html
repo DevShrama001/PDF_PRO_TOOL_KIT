@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JPG to PDF – PDFPro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    .bg-animated {
+      background: linear-gradient(-45deg, #fbc2eb, #a6c1ee, #fcd5ce, #d4fc79);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .ad-box {
+      background: #fff;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
+</head>
+<body class="bg-animated min-h-screen">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center p-4 bg-white shadow-md">
+    <h1 class="text-red-500 text-2xl font-bold"><a href="/">❤ PDFPro</a></h1>
+  </header>
+
+  <!-- Flash & Main Content -->
+  <div x-data="{ show: false, msg: '', type: 'success' }"
+      x-init="() => {
+        const flash = '{{ get_flashed_messages()|join('||') }}';
+        if(flash.includes('||')) {
+          const [msgType, content] = flash.split('||');
+          msg = content;
+          type = msgType;
+          show = true;
+          setTimeout(() => show = false, 5000);
+        }
+      }">
+
+    <!-- Flash message -->
+    <div x-show="show" x-transition
+        :class="type === 'success' ? 'bg-green-500' : 'bg-red-500'"
+        class="fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-5 py-3 rounded shadow z-50">
+      <span x-text="msg"></span>
+    </div>
+
+    <!-- Main Section with Ad Boxes -->
+    <main class="flex-grow flex justify-center items-center relative px-[180px]">
+
+      <!-- Ads -->
+      <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Top</div>
+      <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
+      <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
+      <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
+
+      <!-- Form Section -->
+      <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px]">
+        <h2 class="text-2xl font-semibold text-center mb-4">Convert JPG to PDF</h2>
+        <p class="text-center text-gray-600 mb-6">Combine multiple images into one PDF document.</p>
+
+        <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
+          <input type="file" name="images" accept="image/jpeg, image/png" multiple required class="p-2 border rounded w-full">
+          <button type="submit"
+                  class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+            Convert Now
+          </button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center text-sm text-gray-600 py-4 bg-white">
+    &copy; 2025 PDFPro. Built by Dev Sharma.
+  </footer>
+</body>
+</html>

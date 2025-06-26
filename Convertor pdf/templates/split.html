@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Split PDF – PDFPro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .animated-bg {
+      background: linear-gradient(-45deg, #c2e9fb, #a1c4fd, #fbc2eb, #fad0c4);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .ad-box {
+      background: #fff;
+      border: 1px solid #ddd;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
+</head>
+<body class="animated-bg text-gray-800 min-h-screen flex flex-col">
+
+  <header class="bg-white/80 shadow-md px-6 py-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-red-500">PDFPro</h1>
+    <nav>
+      <a href="/" class="text-gray-600 hover:text-black px-4">Home</a>
+      <a href="/login" class="text-gray-600 hover:text-black px-4">Login</a>
+      <a href="/register" class="text-gray-600 hover:text-black px-4">Sign Up</a>
+    </nav>
+  </header>
+
+  <!-- Flash Message -->
+  <div x-data="{ show: false, msg: '', type: 'success' }"
+       x-init="() => {
+         const flash = '{{ get_flashed_messages()|join('||') }}';
+         if(flash.includes('||')) {
+           const [msgType, content] = flash.split('||');
+           msg = content;
+           type = msgType;
+           show = true;
+           setTimeout(() => show = false, 5000);
+         }
+       }">
+    <div x-show="show" x-transition
+         :class="type === 'success' ? 'bg-green-500' : 'bg-red-500'"
+         class="fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-5 py-3 rounded shadow z-50">
+      <span x-text="msg"></span>
+    </div>
+  </div>
+
+  <main class="flex-grow flex justify-center items-center relative">
+    <!-- Ad Boxes -->
+    <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px]">Google Ad Top</div>
+    <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px]">Google Ad Bottom</div>
+    <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[500px]">Google Ad Left</div>
+    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[500px]">Google Ad Right</div>
+
+    <!-- Form Section -->
+    <section class="bg-white/90 shadow-xl backdrop-blur-md rounded-xl p-8 max-w-md w-full z-10 mt-[110px] mb-[110px]">
+      <h2 class="text-xl font-semibold text-gray-800 mb-2">Split PDF</h2>
+      <p class="text-sm text-gray-500 mb-6">Extract selected pages from your PDF into a new file.</p>
+
+      <form method="POST" enctype="multipart/form-data" class="space-y-4" onsubmit="resetFormAfterDelay(event)">
+        <input type="file" name="pdf" id="pdfInput" accept="application/pdf" required class="w-full border p-2 rounded" onchange="checkEncryption(this.files)">
+
+        <div id="passwordField" class="hidden">
+          <input type="password" name="password" placeholder="Enter password for protected PDF" class="w-full border p-2 rounded">
+        </div>
+
+        <div class="flex gap-4">
+          <input type="number" name="start" min="1" placeholder="Start Page" required class="w-1/2 border p-2 rounded">
+          <input type="number" name="end" min="1" placeholder="End Page" required class="w-1/2 border p-2 rounded">
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+          Split PDF
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="text-center text-sm text-gray-600 py-4 bg-white/60 mt-6">
+    &copy; 2025 PDFPro. Built by Dev Sharma.
+  </footer>
+
+  <script>
+    function resetFormAfterDelay(event) {
+      setTimeout(() => {
+        event.target.reset();
+        document.getElementById('passwordField').classList.add('hidden');
+      }, 3000);
+    }
+
+    function checkEncryption(files) {
+      if (!files.length) return;
+      const formData = new FormData();
+      formData.append("pdf", files[0]);
+
+      fetch("/check-pdf-protection", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.protected) {
+          document.getElementById("passwordField").classList.remove("hidden");
+        } else {
+          document.getElementById("passwordField").classList.add("hidden");
+        }
+      });
+    }
+  </script>
+</body>
+</html>
