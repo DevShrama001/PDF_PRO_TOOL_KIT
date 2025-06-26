@@ -33,69 +33,58 @@
     }
   </style>
 </head>
-<body class="bg-animated min-h-screen">
+<body class="bg-animated min-h-screen flex flex-col">
   <header class="flex justify-between items-center p-4 bg-white shadow-md">
     <h1 class="text-red-500 text-2xl font-bold"><a href="/">❤ PDFPro</a></h1>
   </header>
 
-  <main class="flex-grow flex justify-center items-center relative px-[180px]">
+  <main class="flex-grow flex flex-col items-center relative px-[60px]">
     <!-- Ad Top -->
-    <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Top</div>
+    <div class="ad-box w-[600px] h-[80px] z-20 mt-4 mb-2">Google Ad Top</div>
+
+    <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl w-full z-30 my-4">
+      <h2 class="text-2xl font-semibold text-center mb-4">Add Watermark</h2>
+      <p class="text-center text-gray-600 mb-6">Embed text or image watermark into your PDF pages.</p>
+
+      <form method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="font-semibold">PDF File</label>
+          <input type="file" name="pdf" accept="application/pdf" required class="p-2 border rounded w-full">
+        </div>
+        <div>
+          <label class="font-semibold">Watermark Text (optional)</label>
+          <input type="text" name="watermark" placeholder="Watermark Text" class="p-2 border rounded w-full">
+        </div>
+        <div>
+          <label class="font-semibold">Or Upload Image (optional)</label>
+          <input type="file" name="image" accept="image/*" class="p-2 border rounded w-full">
+        </div>
+        <div>
+          <label class="font-semibold">Password (if protected PDF)</label>
+          <input type="password" name="password" placeholder="Optional Password" class="p-2 border rounded w-full">
+        </div>
+        <div class="md:col-span-2 flex justify-center">
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition w-full md:w-auto">Apply Watermark</button>
+        </div>
+      </form>
+    </section>
 
     <!-- Ad Bottom -->
-    <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
+    <div class="ad-box w-[600px] h-[80px] z-20 mt-2 mb-4">Google Ad Bottom</div>
 
     <!-- Ad Left -->
     <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
 
     <!-- Ad Right -->
     <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
-
-    <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px]">
-      <h2 class="text-2xl font-semibold text-center mb-4">Add Watermark</h2>
-      <p class="text-center text-gray-600 mb-6">Embed text or image watermark into your PDF pages.</p>
-
-      <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
-        <input type="file" name="pdf" accept="application/pdf" required class="p-2 border rounded w-full">
-
-        <label class="font-semibold">Watermark Text (optional)</label>
-        <input type="text" name="watermark" placeholder="Watermark Text" class="p-2 border rounded w-full">
-
-        <label class="font-semibold">Or Upload Image (optional)</label>
-        <input type="file" name="image" accept="image/*" class="p-2 border rounded w-full">
-
-        <label class="font-semibold">Font</label>
-        <select name="font" class="p-2 border rounded">
-          <option value="Helvetica">Helvetica</option>
-          <option value="Courier">Courier</option>
-          <option value="Times-Roman">Times-Roman</option>
-        </select>
-
-        <label class="font-semibold">Text Color</label>
-        <input type="color" name="color" value="#000000" class="p-2 border rounded">
-
-        <label class="font-semibold">Opacity (0 to 1)</label>
-        <input type="number" step="0.1" min="0" max="1" name="opacity" value="0.3" class="p-2 border rounded">
-
-        <label class="font-semibold">Image Position</label>
-        <select name="img_position" class="p-2 border rounded">
-          <option value="center">Center</option>
-          <option value="top-left">Top Left</option>
-          <option value="top-right">Top Right</option>
-          <option value="bottom-left">Bottom Left</option>
-          <option value="bottom-right">Bottom Right</option>
-        </select>
-
-        <label class="font-semibold">Password (if protected PDF)</label>
-        <input type="password" name="password" placeholder="Optional Password" class="p-2 border rounded w-full">
-
-        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Apply Watermark</button>
-      </form>
-    </section>
   </main>
 
-  <footer class="text-center text-sm text-gray-600 py-4 bg-white">
-    &copy; 2025 PDFPro. Built by Dev Sharma.
+  <footer class="text-center text-xs text-gray-500 py-6 bg-white mt-8 border-t border-gray-200 w-full">
+    <div class="flex flex-col items-center gap-1">
+      <span>&copy; 2025 <span class="font-semibold text-red-500">PDFPro</span></span>
+      <span>Made with <span class="text-red-400">&#10084;&#65039;</span> by <a href="https://devsharma.me" class="text-blue-600 hover:underline" target="_blank">Dev Sharma</a></span>
+      <span class="text-[10px] text-gray-400">All trademarks and copyrights belong to their respective owners.</span>
+    </div>
   </footer>
 </body>
 </html>

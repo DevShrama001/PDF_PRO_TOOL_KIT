@@ -1,45 +1,32 @@
 import os
 import uuid
-from PyPDF2 import PdfReader, PdfWriter
+import pikepdf
 
-def handle_protect(file, password: str):
+def handle_protect(input_path, password: str):
     """
     Protect an uploaded PDF with a password using AES-256 encryption.
-    :param file: FileStorage object (uploaded PDF)
+    :param input_path: Path to uploaded PDF file
     :param password: string password to encrypt PDF
     :return: path to encrypted PDF
     """
-    # Directories setup
-    UPLOAD_DIR = 'uploads'
+    print(f"[DEBUG] handle_protect: input_path={input_path}, password=<{password}>")  # DEBUG: print actual password
     OUTPUT_DIR = 'output'
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    # Save original PDF
-    original_name = file.filename
-    input_path = os.path.join(UPLOAD_DIR, original_name)
-    file.save(input_path)
-
-    # Read pages and write to writer with encryption
-    reader = PdfReader(input_path)
-    writer = PdfWriter()
-    for page in reader.pages:
-        writer.add_page(page)
-
-    # Encrypt with user password (owner password same)
-    writer.encrypt(
-        user_pwd=password,
-        owner_pwd=password,
-        use_128bit=True  # AES-128; set False for AES-256 if supported
-    )
-
-    # Output file
-    output_filename = f'protected_{uuid.uuid4().hex}.pdf'
-    output_path = os.path.join(OUTPUT_DIR, output_filename)
-    with open(output_path, 'wb') as out_pdf:
-        writer.write(out_pdf)
-
-    # Cleanup original upload
-    os.remove(input_path)
-
-    return output_path
+    try:
+        if not os.path.exists(input_path):
+            raise Exception(f"Input file does not exist: {input_path}")
+        if os.path.getsize(input_path) == 0:
+            raise Exception(f"Input file is empty: {input_path}")
+        output_filename = f'protected_{uuid.uuid4().hex}.pdf'
+        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        with pikepdf.open(input_path) as pdf:
+            pdf.save(output_path, encryption=pikepdf.Encryption(owner=password, user=password, R=6))
+        print(f"[DEBUG] handle_protect: Output written to {output_path}")
+        return output_path
+    except Exception as e:
+        print(f"[DEBUG] handle_protect: Exception: {e}")
+        raise Exception(
+            "error||PDF protection failed: "
+            + str(e)
+            + "\nNote: Some PDFs may use unsupported or proprietary encryption. Only standard password protection (RC4, AES-128, AES-256) is supported. For best results, use PDFs created or saved with common tools like Adobe Acrobat."
+        )

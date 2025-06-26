@@ -1,6 +1,6 @@
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Compress File – PDFPro</title>
@@ -99,10 +99,42 @@
                   class="p-2 border rounded w-full" />
           </div>
 
+          <div>
+            <label class="font-semibold">Target File Size</label>
+            <div class="flex gap-2">
+              <input type="number" name="target_size" min="10" class="p-2 border rounded w-full" placeholder="Enter size">
+              <select name="target_unit" class="p-2 border rounded">
+                <option value="kb">KB</option>
+                <option value="mb">MB</option>
+              </select>
+            </div>
+            <span class="text-xs text-gray-500">Set your desired output file size</span>
+          </div>
+
+          <div>
+            <label class="inline-flex items-center">
+              <input type="checkbox" name="lossless" value="1" class="mr-2">
+              <span class="font-semibold">Lossless Compression (no quality loss)</span>
+            </label>
+            <span class="block text-xs text-gray-500 mt-1">For images: PNG, for PDF: best quality, for DOCX: ZIP recompress</span>
+          </div>
+
           <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
             Compress & Download
           </button>
         </form>
+        {% if download_link %}
+        <div class="mt-4 text-center">
+          <a href="{{ download_link }}" download class="inline-block bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Download Compressed File</a>
+        </div>
+        {% endif %}
+        <script>
+          document.getElementById('compressForm').addEventListener('submit', function(e) {
+            setTimeout(function() {
+              document.getElementById('fileInput').value = '';
+            }, 1000);
+          });
+        </script>
       </section>
     </main>
 

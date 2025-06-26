@@ -33,7 +33,7 @@
     }
   </style>
 </head>
-<body class="bg-animated min-h-screen">
+<body class="bg-animated min-h-screen flex flex-col">
 
   <!-- Header -->
   <header class="flex justify-between items-center p-4 bg-white shadow-md">
@@ -51,7 +51,7 @@
           show = true;
           setTimeout(() => show = false, 5000);
         }
-      }">
+      }" class="flex-grow flex flex-col">
 
     <!-- Flash message -->
     <div x-show="show" x-transition
@@ -70,11 +70,11 @@
       <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
 
       <!-- Form Section -->
-      <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px]">
+      <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px] flex flex-col items-center justify-center">
         <h2 class="text-2xl font-semibold text-center mb-4">Convert JPG to PDF</h2>
         <p class="text-center text-gray-600 mb-6">Combine multiple images into one PDF document.</p>
 
-        <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
+        <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4 w-full">
           <input type="file" name="images" accept="image/jpeg, image/png" multiple required class="p-2 border rounded w-full">
           <button type="submit"
                   class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
@@ -86,8 +86,8 @@
   </div>
 
   <!-- Footer -->
-  <footer class="text-center text-sm text-gray-600 py-4 bg-white">
-    &copy; 2025 PDFPro. Built by Dev Sharma.
+  <footer class="text-center text-sm text-gray-600 py-4 bg-white mt-auto border-t">
+    &copy; 2025 <span class="font-semibold text-red-500">PDFPro</span>. Built by <a href="https://devsharma.me" class="text-blue-600 hover:underline" target="_blank" rel="noopener">Dev Sharma</a>.
   </footer>
 </body>
 </html>
