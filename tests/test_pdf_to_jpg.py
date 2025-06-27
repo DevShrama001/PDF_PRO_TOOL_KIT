@@ -1,5 +1,15 @@
 import os
-from PyPDF2 import PdfWriter
+import pytest
+try:
+    from PyPDF2 import PdfWriter
+except ModuleNotFoundError:
+    PdfWriter = None
+    pytest.skip("PyPDF2 not installed", allow_module_level=True)
+try:
+    import fitz
+except ModuleNotFoundError:
+    fitz = None
+    pytest.skip("PyMuPDF not installed", allow_module_level=True)
 
 from Convertor_pdf.tools.pdf_to_jpg import handle_pdf_to_jpg
 

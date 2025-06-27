@@ -1,7 +1,18 @@
 import os
 import sys
 import importlib
-from docx import Document
+import types
+import pytest
+try:
+    from docx import Document
+except ModuleNotFoundError:
+    Document = None
+    pytest.skip("docx not installed", allow_module_level=True)
+try:
+    import docx2pdf
+except ModuleNotFoundError:
+    docx2pdf = types.SimpleNamespace(convert=lambda *a, **k: None)
+    pytest.skip("docx2pdf not installed", allow_module_level=True)
 
 # reload module after monkeypatching pythoncom
 

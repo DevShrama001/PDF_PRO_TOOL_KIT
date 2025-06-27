@@ -9,7 +9,9 @@ def handle_protect(input_path, password: str):
     :param password: string password to encrypt PDF
     :return: path to encrypted PDF
     """
-    print(f"[DEBUG] handle_protect: input_path={input_path}, password=<{password}>")  # DEBUG: print actual password
+    # Avoid logging the raw password for security reasons
+    masked_pw = '*' * len(password) if password else ''
+    print(f"[DEBUG] handle_protect: input_path={input_path}, password=<{masked_pw}>")
     OUTPUT_DIR = 'output'
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     try:
