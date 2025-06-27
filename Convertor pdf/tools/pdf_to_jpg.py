@@ -15,6 +15,9 @@ except Exception as e:
 
 def handle_pdf_to_jpg(pdf_bytes, password=""):
     print("[DEBUG] handle_pdf_to_jpg CALLED")
+    doc = None
+    output_dir = None
+    image_paths = []
     try:
         print("[DEBUG] Attempting to open PDF with PyMuPDF...")
         try:
@@ -89,7 +92,6 @@ def handle_pdf_to_jpg(pdf_bytes, password=""):
             raise Exception("error||The PDF has no pages to convert.")
 
         output_dir = tempfile.mkdtemp()
-        image_paths = []
         for i in range(doc.page_count):
             try:
                 page = doc.load_page(i)
@@ -137,3 +139,21 @@ def handle_pdf_to_jpg(pdf_bytes, password=""):
         except Exception as log_e:
             print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{log_e}")
         raise Exception(f"error||{str(e)}\nLog saved to {log_path}")
+
+    finally:
+        # Cleanup temporary files and close document
+        try:
+            if doc:
+                doc.close()
+        except Exception:
+            pass
+        for img_path in image_paths:
+            try:
+                os.remove(img_path)
+            except Exception:
+                pass
+        if output_dir:
+            try:
+                os.rmdir(output_dir)
+            except Exception:
+                pass

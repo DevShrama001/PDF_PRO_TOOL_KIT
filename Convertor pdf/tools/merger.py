@@ -3,13 +3,21 @@ import os
 import uuid
 
 def handle_merge(files, password=None):
+    """Merge a sequence of uploaded PDFs into a single PDF."""
     merger = PdfMerger()
     temp_paths = []
 
+    # Ensure required directories exist
+    UPLOAD_DIR = 'uploads'
+    OUTPUT_DIR = 'output'
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
     try:
-        # Save uploaded files
+        # Save uploaded files with unique names
         for f in files:
-            path = os.path.join('uploads', f.filename)
+            ext = os.path.splitext(f.filename)[1]
+            path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex}{ext}")
             f.save(path)
             temp_paths.append(path)
 
@@ -24,7 +32,7 @@ def handle_merge(files, password=None):
             merger.append(reader, import_outline=False)
 
         # Save merged file
-        output_file = os.path.join('output', f'merged_{uuid.uuid4().hex}.pdf')
+        output_file = os.path.join(OUTPUT_DIR, f"merged_{uuid.uuid4().hex}.pdf")
         with open(output_file, 'wb') as out:
             merger.write(out)
 

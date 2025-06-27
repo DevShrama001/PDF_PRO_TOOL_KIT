@@ -3,7 +3,11 @@ import uuid
 import datetime
 import docx
 from docx2pdf import convert
-import pythoncom  # For COM initialization (fixes CoInitialize error)
+
+try:
+    import pythoncom  # For COM initialization on Windows
+except Exception:  # ImportError or other issues
+    pythoncom = None
 
 def handle_word_to_pdf(input_path):
     """
@@ -54,11 +58,11 @@ def handle_word_to_pdf(input_path):
     output_pdf_path = os.path.join(OUTPUT_DIR, output_pdf_name)
 
     try:
-        # Initialize COM before docx2pdf
-        pythoncom.CoInitialize()
+        # Initialize COM before docx2pdf if available (Windows)
+        if pythoncom and hasattr(pythoncom, "CoInitialize"):
+            pythoncom.CoInitialize()
         log_event(f"[INFO] Starting docx2pdf conversion: {input_path} -> {OUTPUT_DIR}")
         convert(input_path, OUTPUT_DIR)
-        pythoncom.CoUninitialize()
 
         # Expected output file (same name, .pdf)
         generated_pdf_path = os.path.join(OUTPUT_DIR, f"{base_name}.pdf")
@@ -74,6 +78,11 @@ def handle_word_to_pdf(input_path):
         log_event(f"[ERROR] Exception during docx2pdf conversion: {str(e)}")
         raise
     finally:
+        if pythoncom and hasattr(pythoncom, "CoUninitialize"):
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
         # Cleanup uploaded DOCX
         try:
             os.remove(input_path)
