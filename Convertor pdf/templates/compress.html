@@ -57,22 +57,19 @@
 
     <!-- Flash Message -->
     <div x-data="{ show: false, msg: '', type: 'success' }"
-        x-init="() => {
-          const raw = `{{ get_flashed_messages()|join('||') }}`;
-          if (raw.includes('||')) {
-            const [msgType, ...rest] = raw.split('||');
-            msg = rest.join('||');
-            type = msgType;
-            show = true;
-            setTimeout(() => show = false, 5000);
-          }
-        }">
-      <div x-show="show" x-transition
-          :class="type === 'success' ? 'bg-green-500' : 'bg-red-500'"
-          class="fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-5 py-3 rounded shadow z-50">
-        <span x-text="msg"></span>
-      </div>
-    </div>
+       x-init="() => {
+         const flash = '{{ get_flashed_messages()|join('||') }}';
+         if(flash.includes('||')) {
+           const [msgType, ...rest] = flash.split('||');
+           msg = rest.join('||');
+           type = msgType;
+           show = true;
+           setTimeout(() => show = false, 5000);
+         }
+       }"
+       @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
+       @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
+       class="flex-grow flex flex-col">
 
     <!-- Main Section with Ad Slots -->
     <main class="flex-grow flex justify-center items-center relative px-[180px]">
@@ -174,6 +171,14 @@
     });
   });
   </script>
+    <script>
+      document.querySelector('form').addEventListener('submit', function (e) {
+        setTimeout(() => {
+          this.reset();
+          location.reload();
+        }, 500);
+      });
+    </script>
 
   </body>
   </html>

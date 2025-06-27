@@ -1,24 +1,89 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF to Word – PDFPro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/index.css">
-  <link rel="stylesheet" href="/static/css/tool.css">
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    .bg-animated {
+      background: linear-gradient(-45deg, #fbc2eb, #a6c1ee, #fcd5ce, #d4fc79);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .ad-box {
+      background: #fff;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
 </head>
-<body>
-  <header><h1><a href="/">PDFPro</a></h1></header>
-  <main class="tool-wrapper">
-    <section class="tool-box">
-      <h2>PDF to Word</h2>
-      <p>Extract text and images from PDF into a .docx file.</p>
-      <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="pdf" accept="application/pdf" required>
-        <button type="submit">Convert Now</button>
-      </form>
-    </section>
-  </main>
-  <footer><p>&copy; 2025 PDFPro. Built by Dev Sharma.</p></footer>
+<body class="bg-animated min-h-screen flex flex-col">
+  <header class="bg-white/80 shadow-md px-6 py-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-red-500"><a href="/">PDFPro</a></h1>
+    <nav x-data="{ open: false }" class="relative">
+      <a href="/" class="text-gray-600 hover:text-black px-4">Home</a>
+      <button @click="open = !open" class="text-gray-700 hover:text-black px-4 focus:outline-none">Tools ▾</button>
+      <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50">
+        <a href="/merge" class="block px-4 py-2 hover:bg-gray-100 text-sm">Merge PDF</a>
+        <a href="/split" class="block px-4 py-2 hover:bg-gray-100 text-sm">Split PDF</a>
+        <a href="/compress" class="block px-4 py-2 hover:bg-gray-100 text-sm">Compress PDF</a>
+        <a href="/pdf-to-jpg" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to JPG</a>
+        <a href="/jpg-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">JPG to PDF</a>
+        <a href="/protect" class="block px-4 py-2 hover:bg-gray-100 text-sm">Protect PDF</a>
+        <a href="/watermark" class="block px-4 py-2 hover:bg-gray-100 text-sm">Add Watermark</a>
+        <a href="/word-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">Word to PDF</a>
+        <a href="/pdf-to-word" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to Word</a>
+      </div>
+    </nav>
+  </header>
+  <div x-data="{ show: false, msg: '', type: 'success' }"
+       x-init="() => { const flash = '{{ get_flashed_messages()|join(''||') }}'; if(flash.includes('||')) { const [msgType, ...rest] = flash.split('||'); msg = rest.join('||'); type = msgType; show = true; setTimeout(() => show = false, 5000); } }"
+       @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
+       @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
+       class="flex-grow flex flex-col">
+    <div x-show="show" x-transition :class="type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="fixed top-5 left-1/2 transform -translate-x-1/2 text-white px-5 py-3 rounded shadow z-50">
+      <span x-text="msg"></span>
+    </div>
+    <main class="flex-grow flex justify-center items-center relative px-[180px]">
+      <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Top</div>
+      <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
+      <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
+      <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
+      <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px] flex flex-col items-center justify-center">
+        <h2 class="text-2xl font-semibold text-center mb-4">PDF to Word</h2>
+        <p class="text-center text-gray-600 mb-6">Extract text and images from PDF into a .docx file.</p>
+        <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4 w-full" id="pdfForm">
+          <input id="pdfInput" type="file" name="pdf" accept="application/pdf" required class="p-2 border rounded w-full">
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Convert Now</button>
+        </form>
+      </section>
+    </main>
+  </div>
+  <footer class="text-center text-sm text-gray-600 py-4 bg-white mt-auto border-t">
+    &copy; 2025 <span class="font-semibold text-red-500">PDFPro</span>. Built by <a href="https://devsharma.me" class="text-blue-600 hover:underline" target="_blank" rel="noopener">Dev Sharma</a>.
+  </footer>
+  <script>
+    document.getElementById('pdfForm').addEventListener('submit', function (e) {
+      setTimeout(() => {
+        this.reset();
+      }, 500);
+    });
+  </script>
 </body>
 </html>

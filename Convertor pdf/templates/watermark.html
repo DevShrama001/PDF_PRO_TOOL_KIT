@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="{ show: false, msg: '', type: 'success' }">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,5 +86,37 @@
       <span class="text-[10px] text-gray-400">All trademarks and copyrights belong to their respective owners.</span>
     </div>
   </footer>
+
+  <div x-show="show" x-transition class="fixed top-4 right-4 bg-white border rounded-lg shadow-lg p-4 z-50 max-w-xs w-full">
+    <div x-show="type === 'success'" class="text-green-600 font-semibold">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M9 12l2 2 4-4m2-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span x-text="msg"></span>
+    </div>
+    <div x-show="type === 'error'" class="text-red-600 font-semibold">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+      <span x-text="msg"></span>
+    </div>
+  </div>
+
+  <script>
+    document.querySelector('form').addEventListener('submit', function (e) {
+      setTimeout(() => {
+        this.reset();
+        location.reload();
+      }, 500);
+    });
+
+    // Listen for custom events to show messages using Alpine.js event system
+    window.addEventListener('show-success', function(e) {
+      window.dispatchEvent(new CustomEvent('show-success', { detail: e.detail }));
+    });
+    window.addEventListener('show-error', function(e) {
+      window.dispatchEvent(new CustomEvent('show-error', { detail: e.detail }));
+    });
+  </script>
 </body>
 </html>

@@ -29,15 +29,28 @@ def home_page():
 
 @app.route('/merge', methods=['GET', 'POST'])
 def merge_route():
+    import datetime
+    log_path = os.path.abspath(os.path.join("output", "merge_error.log"))
+    def log_event(msg):
+        try:
+            with open(log_path, "a", encoding="utf-8") as logf:
+                logf.write(f"[{datetime.datetime.now()}] {msg}\n")
+                logf.flush()
+        except Exception as e:
+            print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{e}")
     if request.method == 'POST':
         files = request.files.getlist('pdfs')
         password = request.form.get('password', '')
         merger_instance = PdfMerger()
         input_paths = []
+        files_to_cleanup = []
+        output_path = None
+        log_event(f"[INFO] Merge requested for {len(files)} files.")
         for file in files:
             path = os.path.join('uploads', file.filename)
             file.save(path)
             input_paths.append(path)
+            files_to_cleanup.append(path)
             try:
                 reader = PdfReader(path)
                 if reader.is_encrypted:
@@ -46,47 +59,39 @@ def merge_route():
                             reader.decrypt(password)
                             merger_instance.append(reader)
                         except Exception:
+                            log_event(f"[ERROR] Incorrect password for '{file.filename}'.")
                             flash(f"error||Incorrect password for '{file.filename}'.")
-                            for p in input_paths:
-                                if os.path.exists(p):
-                                    os.remove(p)
                             return redirect(url_for('merge_route'))
                     else:
+                        log_event(f"[ERROR] The file '{file.filename}' is password protected. No password provided.")
                         flash(f"error||The file '{file.filename}' is password protected. Please provide a password.")
-                        for p in input_paths:
-                            if os.path.exists(p):
-                                os.remove(p)
                         return redirect(url_for('merge_route'))
                 else:
                     merger_instance.append(reader)
             except Exception as e:
+                log_event(f"[ERROR] Failed to read '{file.filename}': {str(e)}")
                 flash(f"error||Failed to read '{file.filename}': {str(e)}")
-                for p in input_paths:
-                    if os.path.exists(p):
-                        os.remove(p)
                 return redirect(url_for('merge_route'))
         output_path = os.path.join('output', f'merged_{uuid.uuid4().hex}.pdf')
         try:
             with open(output_path, 'wb') as f:
                 merger_instance.write(f)
             merger_instance.close()
+            files_to_cleanup.append(output_path)
+            log_event(f"[INFO] Merge successful. Output: {output_path}")
         except Exception as e:
+            log_event(f"[ERROR] Failed to create output file: {str(e)}")
             flash(f"error||Failed to create output file: {str(e)}")
-            for p in input_paths:
-                if os.path.exists(p):
-                    os.remove(p)
             return redirect(url_for('merge_route'))
         flash("success||PDFs merged successfully and downloading.")
         @after_this_request
         def remove_files(response):
-            try:
-                for p in input_paths:
-                    if os.path.exists(p):
+            for p in files_to_cleanup:
+                try:
+                    if p and os.path.exists(p):
                         os.remove(p)
-                if os.path.exists(output_path):
-                    os.remove(output_path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+                except Exception as e:
+                    log_event(f"[ERROR] Error deleting file {p}: {e}")
             return response
         return send_file(output_path, as_attachment=True)
     return render_template('merge.html')
@@ -100,6 +105,8 @@ def split_route():
         start = int(request.form["start"])
         end = int(request.form["end"])
         password = request.form.get("password", "")
+        output_path = None
+        files_to_cleanup = [input_path]
         try:
             reader = PdfReader(input_path)
             if reader.is_encrypted:
@@ -108,180 +115,111 @@ def split_route():
                         reader.decrypt(password)
                     except Exception:
                         flash("error||Incorrect password for protected PDF.")
-                        if os.path.exists(input_path):
-                            os.remove(input_path)
                         return redirect(request.url)
                 else:
                     flash("error||This PDF is password protected. Please provide a password.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
                     return redirect(request.url)
         except Exception as e:
             flash(f"error||Failed to read PDF: {str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(request.url)
-        path = split.handle_split(file, start, end, password)
-        if path is None:
-            if os.path.exists(input_path):
-                os.remove(input_path)
+        output_path = split.handle_split(file, start, end, password)
+        if output_path:
+            files_to_cleanup.append(output_path)
+        else:
             flash("error||Failed to create output file.")
             return redirect(request.url)
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                try:
+                    if p and os.path.exists(p):
+                        os.remove(p)
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {p}: {e}")
             return response
-        return send_file(path, as_attachment=True)
+        return send_file(output_path, as_attachment=True)
     return render_template("split.html")
 
 @app.route('/pdf-to-jpg', methods=['GET', 'POST'])
 def pdf_to_jpg_route():
     if request.method == 'POST':
+        files_to_cleanup = []
         try:
             file = request.files.get('pdf')
             if not file:
-                log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                with open(log_path, "a", encoding="utf-8") as logf:
-                    logf.write(f"[ERROR] Route: No file selected.\n")
-                    logf.flush()
                 flash("error||No file selected.")
                 return redirect(url_for('pdf_to_jpg_route'))
-
             password = request.form.get('password', '')
             file_bytes = file.read()
-            print(f"[DEBUG] Route: Received file '{file.filename}' with {len(file_bytes)} bytes")
-
-            # Use fitz for protection check
             try:
                 doc = fitz.open(stream=file_bytes, filetype="pdf")
                 if doc.needs_pass:
-                    print("[DEBUG] Route: PDF is encrypted")
                     if not password:
-                        log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                        with open(log_path, "a", encoding="utf-8") as logf:
-                            logf.write(f"[ERROR] Route: PDF is encrypted but no password provided.\n")
-                            logf.flush()
                         flash("error||This PDF is password protected. Please provide a password.")
                         return redirect(url_for('pdf_to_jpg_route'))
                     if not doc.authenticate(password):
-                        log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                        with open(log_path, "a", encoding="utf-8") as logf:
-                            logf.write(f"[ERROR] Route: Incorrect password for protected PDF.\n")
-                            logf.flush()
                         flash("error||Incorrect password for protected PDF.")
                         return redirect(url_for('pdf_to_jpg_route'))
-                    print("[DEBUG] Authentication successful.")
-                # Only access page count after authentication
-                print(f"[DEBUG] Route: PDF has {doc.page_count} pages")
             except Exception as e:
-                import traceback
-                tb = traceback.format_exc()
-                log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                try:
-                    with open(log_path, "a", encoding="utf-8") as logf:
-                        logf.write(f"\n[ERROR] Route failed to open/read PDF: {str(e)}\nTraceback:\n{tb}\n{'-'*60}\n")
-                        logf.flush()
-                    print(f"[ERROR] Route failed to open/read PDF: {e}\nTraceback written to: {log_path}")
-                except Exception as log_e:
-                    print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{log_e}")
                 flash(f"error||Failed to read PDF: {str(e)}")
                 return redirect(url_for('pdf_to_jpg_route'))
-
-            # Call the actual handler
             try:
                 path = handle_pdf_to_jpg(file_bytes, password)
             except Exception as e:
-                log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                import traceback
-                tb = traceback.format_exc()
-                with open(log_path, "a", encoding="utf-8") as logf:
-                    logf.write(f"[ERROR] Route: handle_pdf_to_jpg raised: {str(e)}\nTraceback:\n{tb}\n")
-                    logf.flush()
                 flash(f"error||{str(e)}")
                 return redirect(url_for('pdf_to_jpg_route'))
-
             if not path or not os.path.exists(path):
-                log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-                with open(log_path, "a", encoding="utf-8") as logf:
-                    logf.write(f"[ERROR] Route: Failed to create output file.\n")
-                    logf.flush()
                 flash("error||Failed to create output file.")
                 return redirect(url_for('pdf_to_jpg_route'))
-
+            files_to_cleanup.append(path)
             flash("success||PDF converted to JPG successfully.")
-
-            def delayed_remove(file_path):
-                time.sleep(2)  # Wait for 2 seconds to ensure file is not locked
-                try:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                        print(f"[DEBUG] Cleaned up file: {file_path}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to clean up file: {e}")
-
             @after_this_request
             def cleanup(response):
-                threading.Thread(target=delayed_remove, args=(path,)).start()
+                for p in files_to_cleanup:
+                    try:
+                        if p and os.path.exists(p):
+                            os.remove(p)
+                    except Exception as e:
+                        app.logger.error(f"Error deleting file {p}: {e}")
                 return response
-
             return send_file(path, as_attachment=True)
-
         except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            log_path = os.path.abspath(os.path.join("output", "pdf_to_jpg_error.log"))
-            try:
-                with open(log_path, "a", encoding="utf-8") as logf:
-                    logf.write(f"\n[ERROR] Route outer exception: {str(e)}\nTraceback:\n{tb}\n{'-'*60}\n")
-                    logf.flush()
-                print(f"[ERROR] Route outer exception: {e}\nTraceback written to: {log_path}")
-            except Exception as log_e:
-                print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{log_e}")
             flash(f"error||{str(e)}")
             return redirect(url_for('pdf_to_jpg_route'))
-
     return render_template("pdf_to_jpg.html")
 
 @app.route('/jpg-to-pdf', methods=['GET', 'POST'])
 def jpg_to_pdf_route():
     if request.method == 'POST':
         imgs = request.files.getlist('images')
-        input_paths = []
-        for img in imgs:
-            img_path = os.path.join('uploads', img.filename)
-            img.save(img_path)
-            input_paths.append(img_path)
+        files_to_cleanup = []
         try:
-            path = handle_jpg_to_pdf([open(p, 'rb') for p in input_paths])
+            path = handle_jpg_to_pdf(imgs)
             if not path or not os.path.exists(path):
                 flash("error||Failed to create output file.")
-                for p in input_paths:
-                    if os.path.exists(p):
-                        os.remove(p)
                 return redirect(url_for('jpg_to_pdf_route'))
+            files_to_cleanup.append(path)
         except Exception as e:
+            for img in imgs:
+                try:
+                    os.remove(os.path.join('uploads', img.filename))
+                except Exception:
+                    pass
             flash(f"error||{str(e)}")
-            for p in input_paths:
-                if os.path.exists(p):
-                    os.remove(p)
             return redirect(url_for('jpg_to_pdf_route'))
         flash("success||JPGs converted to PDF successfully.")
+        import threading, time
+        def delayed_remove(file_path):
+            time.sleep(2)
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                app.logger.error(f"Error deleting file {file_path}: {e}")
         @after_this_request
         def remove_files(response):
-            try:
-                for p in input_paths:
-                    if os.path.exists(p):
-                        os.remove(p)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                threading.Thread(target=delayed_remove, args=(p,)).start()
             return response
         return send_file(path, as_attachment=True)
     return render_template('jpg_to_pdf.html')
@@ -294,41 +232,35 @@ def protect_route():
         input_path = os.path.join('uploads', file.filename)
         file.save(input_path)
         pwd = request.form['password']
+        files_to_cleanup = [input_path]
+        path = None
         try:
             reader = PdfReader(input_path)
             if reader.is_encrypted:
                 if not pwd:
                     flash("error||This PDF is password protected. Please provide a password.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
                     return redirect(url_for('protect_route'))
                 try:
                     reader.decrypt(pwd)
                 except Exception:
                     flash("error||Incorrect password for protected PDF.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
                     return redirect(url_for('protect_route'))
         except Exception as e:
             flash(f"error||Failed to read PDF: {str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('protect_route'))
         path = handle_protect(input_path, pwd)
         if not path or not os.path.exists(path):
             flash("error||Failed to create output file.")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('protect_route'))
+        files_to_cleanup.append(path)
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                try:
+                    if p and os.path.exists(p):
+                        os.remove(p)
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {p}: {e}")
             return response
         return send_file(path, as_attachment=True)
     return render_template('protect.html')
@@ -342,15 +274,18 @@ def watermark_route():
         watermark_text = request.form.get('watermark', '')
         image = request.files.get('image')
         image_path = None
+        files_to_cleanup = [input_path]
         if image and image.filename:
             image_path = os.path.join('uploads', image.filename)
             image.save(image_path)
+            files_to_cleanup.append(image_path)
         font = request.form.get('font', 'Helvetica')
         color = request.form.get('color', '#000000')
         opacity = request.form.get('opacity', 0.3)
         img_position = request.form.get('img_position', 'center')
         img_scale = float(request.form.get('img_scale', 0.3))
         angle = float(request.form.get('angle', -45))
+        path = None
         try:
             reader = PdfReader(input_path)
             password = request.form.get('password', '')
@@ -360,24 +295,12 @@ def watermark_route():
                         reader.decrypt(password)
                     except Exception:
                         flash("error||Incorrect password for protected PDF.")
-                        if os.path.exists(input_path):
-                            os.remove(input_path)
-                        if image_path and os.path.exists(image_path):
-                            os.remove(image_path)
                         return redirect(url_for('watermark_route'))
                 else:
                     flash("error||This PDF is password protected. Please provide a password.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
-                    if image_path and os.path.exists(image_path):
-                        os.remove(image_path)
                     return redirect(url_for('watermark_route'))
         except Exception as e:
             flash(f"error||Failed to read PDF: {str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
             return redirect(url_for('watermark_route'))
         path = watermark.handle_watermark(
             open(input_path, 'rb'),
@@ -392,22 +315,16 @@ def watermark_route():
         )
         if not path or not os.path.exists(path):
             flash("error||Failed to create output file.")
-            if os.path.exists(input_path):
-                os.remove(input_path)
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
             return redirect(url_for('watermark_route'))
+        files_to_cleanup.append(path)
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if image_path and os.path.exists(image_path):
-                    os.remove(image_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                try:
+                    if p and os.path.exists(p):
+                        os.remove(p)
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {p}: {e}")
             return response
         return send_file(path, as_attachment=True)
     return render_template('watermark.html')
@@ -415,32 +332,53 @@ def watermark_route():
 
 @app.route('/word-to-pdf', methods=['GET', 'POST'])
 def word_to_pdf_route():
+    import datetime
+    log_path = os.path.abspath(os.path.join("output", "word_to_pdf_error.log"))
+    def log_event(msg):
+        try:
+            with open(log_path, "a", encoding="utf-8") as logf:
+                logf.write(f"[{datetime.datetime.now()}] {msg}\n")
+                logf.flush()
+        except Exception as e:
+            print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{e}")
     if request.method == 'POST':
         file = request.files['docx']
         input_path = os.path.join('uploads', file.filename)
         file.save(input_path)
-        try:
-            # No password protection for docx
-            path = handle_word_to_pdf(open(input_path, 'rb'))
-            if not path or not os.path.exists(path):
-                flash("error||Failed to create output file.")
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                return redirect(url_for('word_to_pdf_route'))
-        except Exception as e:
-            flash(f"error||{str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
+        # Check for empty file
+        if os.path.getsize(input_path) == 0:
+            log_event(f"[ERROR] Uploaded DOCX is empty: {input_path}")
+            flash("error||Uploaded Word file is empty. Please select a valid .docx file with content.")
+            os.remove(input_path)
             return redirect(url_for('word_to_pdf_route'))
+        files_to_cleanup = [input_path]
+        path = None
+        try:
+            log_event(f"[INFO] Word to PDF requested for file: {file.filename}")
+            # Pass FileStorage object directly
+            path = handle_word_to_pdf(file)
+            if not path or not os.path.exists(path):
+                log_event(f"[ERROR] Failed to create output file for: {file.filename}")
+                flash("error||Failed to create output file.")
+                return redirect(url_for('word_to_pdf_route'))
+            files_to_cleanup.append(path)
+            log_event(f"[INFO] Word to PDF conversion successful. Output: {path}")
+        except Exception as e:
+            log_event(f"[ERROR] Exception: {str(e)}")
+            flash(f"error||{str(e)}")
+            return redirect(url_for('word_to_pdf_route'))
+        import threading, time
+        def delayed_remove(file_path):
+            time.sleep(2)
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                log_event(f"[ERROR] Error deleting file {file_path}: {e}")
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                threading.Thread(target=delayed_remove, args=(p,)).start()
             return response
         return send_file(path, as_attachment=True)
     return render_template('word_to_pdf.html')
@@ -451,6 +389,8 @@ def pdf_to_word_route():
         file = request.files['pdf']
         input_path = os.path.join('uploads', file.filename)
         file.save(input_path)
+        files_to_cleanup = [input_path]
+        path = None
         try:
             reader = PdfReader(input_path)
             password = request.form.get('password', '')
@@ -460,34 +400,27 @@ def pdf_to_word_route():
                         reader.decrypt(password)
                     except Exception:
                         flash("error||Incorrect password for protected PDF.")
-                        if os.path.exists(input_path):
-                            os.remove(input_path)
                         return redirect(url_for('pdf_to_word_route'))
                 else:
                     flash("error||This PDF is password protected. Please provide a password.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
                     return redirect(url_for('pdf_to_word_route'))
         except Exception as e:
             flash(f"error||Failed to read PDF: {str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('pdf_to_word_route'))
-        path = handle_pdf_to_word(open(input_path, 'rb'))
+        # Pass FileStorage object directly
+        path = handle_pdf_to_word(file)
         if not path or not os.path.exists(path):
             flash("error||Failed to create output file.")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('pdf_to_word_route'))
+        files_to_cleanup.append(path)
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            for p in files_to_cleanup:
+                try:
+                    if p and os.path.exists(p):
+                        os.remove(p)
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {p}: {e}")
             return response
         return send_file(path, as_attachment=True)
     return render_template('pdf_to_word.html')
@@ -536,10 +469,12 @@ def compress_route():
         lossless = bool(request.form.get('lossless'))
         input_path = os.path.join('uploads', file.filename)
         file.save(input_path)
+        files_to_cleanup = [input_path]
         if target_size:
             target_size = int(target_size)
         else:
             target_size = None
+        path = None
         try:
             reader = PdfReader(input_path)
             if reader.is_encrypted:
@@ -548,26 +483,19 @@ def compress_route():
                         reader.decrypt(password)
                     except Exception:
                         flash("error||Incorrect password for protected PDF.")
-                        if os.path.exists(input_path):
-                            os.remove(input_path)
                         return redirect(url_for('compress_route'))
                 else:
                     flash("error||This PDF is password protected. Please provide a password.")
-                    if os.path.exists(input_path):
-                        os.remove(input_path)
                     return redirect(url_for('compress_route'))
         except Exception as e:
             flash(f"error||Failed to read PDF: {str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('compress_route'))
         try:
             path = compress.handle_compress(open(input_path, 'rb'), password, target_size, target_unit, lossless)
             if not path or not os.path.exists(path):
                 flash("error||Failed to create output file.")
-                if os.path.exists(input_path):
-                    os.remove(input_path)
                 return redirect(url_for('compress_route'))
+            files_to_cleanup.append(path)
             # Check output file size
             if target_size:
                 if target_unit == 'mb':
@@ -585,18 +513,19 @@ def compress_route():
             session['compressed_file'] = os.path.basename(path)
         except Exception as e:
             flash(f"error||{str(e)}")
-            if os.path.exists(input_path):
-                os.remove(input_path)
             return redirect(url_for('compress_route'))
         @after_this_request
         def remove_files(response):
-            try:
-                if os.path.exists(input_path):
-                    os.remove(input_path)
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                app.logger.error(f"Error deleting files: {e}")
+            import threading, time
+            def delayed_remove(file_path):
+                time.sleep(2)
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {file_path}: {e}")
+            for p in files_to_cleanup:
+                threading.Thread(target=delayed_remove, args=(p,)).start()
             return response
         return redirect(url_for('compress_route'))
     # GET request: show download link if available

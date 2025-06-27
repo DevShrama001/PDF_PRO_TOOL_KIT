@@ -69,7 +69,10 @@
            show = true;
            setTimeout(() => show = false, 5000);
          }
-       }" class="flex-grow flex flex-col">
+       }"
+       @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
+       @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
+       class="flex-grow flex flex-col">
 
     <!-- Flash Message -->
     <div x-show="show" x-transition
@@ -113,7 +116,7 @@
     function checkProtection(files) {
       if (!files.length) return;
       const formData = new FormData();
-      formData.append("pdf", files[0]);
+      formData.append("file", files[0]);
 
       fetch("/check-protection", {
         method: "POST",
@@ -130,11 +133,56 @@
       });
     }
 
-    document.getElementById('jpgForm').addEventListener('submit', function () {
-      setTimeout(() => {
-        document.getElementById("pdfInput").value = "";
-        document.getElementById("passwordField").classList.add("hidden");
-      }, 1000);
+    document.getElementById('jpgForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const form = this;
+      const formData = new FormData(form);
+      // Show loading state if you want
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: formData
+        });
+        if (response.ok) {
+          // Try to get filename from Content-Disposition
+          const disposition = response.headers.get('Content-Disposition');
+          let filename = 'output.jpg';
+          if (disposition && disposition.indexOf('filename=') !== -1) {
+            filename = disposition.split('filename=')[1].replace(/['"]/g, '').split(';')[0];
+          }
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          }, 100);
+          // Show success message
+          window.dispatchEvent(new CustomEvent('show-success', { detail: 'PDF converted to JPG successfully.' }));
+        } else {
+          // Try to parse error message
+          const text = await response.text();
+          window.dispatchEvent(new CustomEvent('show-error', { detail: text || 'Conversion failed.' }));
+        }
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('show-error', { detail: 'Network error.' }));
+      }
+      // Clear fields
+      document.getElementById("pdfInput").value = "";
+      document.getElementById("passwordField").value = "";
+      document.getElementById("passwordField").classList.add("hidden");
+    });
+
+    // Listen for custom events to show messages using Alpine.js event system
+    window.addEventListener('show-success', function(e) {
+      window.dispatchEvent(new CustomEvent('show-success', { detail: e.detail }));
+    });
+    window.addEventListener('show-error', function(e) {
+      window.dispatchEvent(new CustomEvent('show-error', { detail: e.detail }));
     });
   </script>
 </body>

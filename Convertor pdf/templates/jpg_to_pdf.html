@@ -42,16 +42,19 @@
 
   <!-- Flash & Main Content -->
   <div x-data="{ show: false, msg: '', type: 'success' }"
-      x-init="() => {
-        const flash = '{{ get_flashed_messages()|join('||') }}';
-        if(flash.includes('||')) {
-          const [msgType, content] = flash.split('||');
-          msg = content;
-          type = msgType;
-          show = true;
-          setTimeout(() => show = false, 5000);
-        }
-      }" class="flex-grow flex flex-col">
+       x-init="() => {
+         const flash = '{{ get_flashed_messages()|join('||') }}';
+         if(flash.includes('||')) {
+           const [msgType, ...rest] = flash.split('||');
+           msg = rest.join('||');
+           type = msgType;
+           show = true;
+           setTimeout(() => show = false, 5000);
+         }
+       }"
+       @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
+       @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
+       class="flex-grow flex flex-col">
 
     <!-- Flash message -->
     <div x-show="show" x-transition
@@ -89,5 +92,22 @@
   <footer class="text-center text-sm text-gray-600 py-4 bg-white mt-auto border-t">
     &copy; 2025 <span class="font-semibold text-red-500">PDFPro</span>. Built by <a href="https://devsharma.me" class="text-blue-600 hover:underline" target="_blank" rel="noopener">Dev Sharma</a>.
   </footer>
+
+  <script>
+    document.querySelector('form').addEventListener('submit', function (e) {
+      setTimeout(() => {
+        this.reset();
+        location.reload();
+      }, 500);
+    });
+
+    // Listen for custom events to show messages using Alpine.js event system
+    window.addEventListener('show-success', function(e) {
+      window.dispatchEvent(new CustomEvent('show-success', { detail: e.detail }));
+    });
+    window.addEventListener('show-error', function(e) {
+      window.dispatchEvent(new CustomEvent('show-error', { detail: e.detail }));
+    });
+  </script>
 </body>
 </html>
