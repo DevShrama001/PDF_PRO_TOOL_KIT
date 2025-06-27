@@ -343,8 +343,12 @@ def word_to_pdf_route():
             print(f"[LOGGING ERROR] Could not write to log file: {log_path}\n{e}")
     if request.method == 'POST':
         file = request.files['docx']
+        print("[DEBUG] file.filename:", file.filename)
+        print("[DEBUG] file.content_length:", getattr(file, 'content_length', 'N/A'))
+        print("[DEBUG] file.mimetype:", file.mimetype)
         input_path = os.path.join('uploads', file.filename)
         file.save(input_path)
+        print("[DEBUG] Saved file size:", os.path.getsize(input_path))
         # Check for empty file
         if os.path.getsize(input_path) == 0:
             log_event(f"[ERROR] Uploaded DOCX is empty: {input_path}")
@@ -355,8 +359,8 @@ def word_to_pdf_route():
         path = None
         try:
             log_event(f"[INFO] Word to PDF requested for file: {file.filename}")
-            # Pass FileStorage object directly
-            path = handle_word_to_pdf(file)
+            # Pass file path instead of file object
+            path = handle_word_to_pdf(input_path)
             if not path or not os.path.exists(path):
                 log_event(f"[ERROR] Failed to create output file for: {file.filename}")
                 flash("error||Failed to create output file.")
@@ -365,7 +369,10 @@ def word_to_pdf_route():
             log_event(f"[INFO] Word to PDF conversion successful. Output: {path}")
         except Exception as e:
             log_event(f"[ERROR] Exception: {str(e)}")
-            flash(f"error||{str(e)}")
+            if "CoInitialize has not been called" in str(e):
+                flash("error||Word automation failed on the server. Please try again later or contact support.")
+            else:
+                flash(f"error||{str(e)}")
             return redirect(url_for('word_to_pdf_route'))
         import threading, time
         def delayed_remove(file_path):

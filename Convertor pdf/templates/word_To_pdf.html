@@ -83,7 +83,7 @@
       e.preventDefault();
       const form = this;
       const formData = new FormData(form);
-      clearAllMessagesAndOutput();
+      // clearAllMessagesAndOutput(); // <-- Commented out to avoid clearing file input before upload
       try {
         const response = await fetch(form.action, {
           method: 'POST',

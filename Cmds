@@ -1,0 +1,13 @@
+git pull origin main - for pull updated data from github
+- `git push origin main` - for push updated data to github
+- `git status` - for check status of your repository
+- `git log` - for check history of your repository
+- `git branch` - for check all branches in your repository
+- `git branch -a` - for check all branches in your repository including remote branches
+- `git checkout
+- `git merge
+- `git reset
+- `git remote add origin https://github.com/username/repository.git` - for add remote repository
+- `git remote set-url origin https://github.com/username/repository.git` - for change remot
+repository url
+- `git remote remove origin` - for remove remote repository
