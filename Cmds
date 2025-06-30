@@ -11,3 +11,4 @@ git pull origin main - for pull updated data from github
 - `git remote set-url origin https://github.com/username/repository.git` - for change remot
 repository url
 - `git remote remove origin` - for remove remote repository
+Ghostscript for compress and upadte in path 

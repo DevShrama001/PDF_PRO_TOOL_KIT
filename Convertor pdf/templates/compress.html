@@ -1,184 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compress File – PDFPro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
     <style>
-      body {
-        font-family: 'Outfit', sans-serif;
-        overflow-x: hidden;
-      }
-      .bg-animated {
-        background: linear-gradient(-45deg, #fbc2eb, #a6c1ee, #fcd5ce, #d4fc79);
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
-      }
-      @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-      .ad-box {
-        background: #fff;
-        border: 1px solid #ddd;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        color: #333;
-      }
+        body { font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        .bg-animated { background: linear-gradient(-45deg, #fbc2eb, #a6c1ee, #fcd5ce, #d4fc79);
+            background-size: 400% 400%; animation: gradientShift 15s ease infinite; }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .ad-box { background: #fff; border: 1px solid #ddd; display: flex;
+            align-items: center; justify-content: center; font-size: 12px; color: #333; }
     </style>
-  </head>
-  <body class="bg-animated text-gray-800 min-h-screen flex flex-col">
-
-    <!-- Header -->
+</head>
+<body class="bg-animated text-gray-800 min-h-screen flex flex-col">
     <header class="bg-white/80 shadow-md px-6 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-red-500"><a href="/">PDFPro</a></h1>
-      <nav x-data="{ open: false }" class="relative">
-        <a href="/" class="text-gray-600 hover:text-black px-4">Home</a>
-        <button @click="open = !open" class="text-gray-700 hover:text-black px-4 focus:outline-none">Tools ▾</button>
-        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50">
-          <a href="/merge" class="block px-4 py-2 hover:bg-gray-100 text-sm">Merge PDF</a>
-          <a href="/split" class="block px-4 py-2 hover:bg-gray-100 text-sm">Split PDF</a>
-          <a href="/compress" class="block px-4 py-2 hover:bg-gray-100 text-sm">Compress PDF</a>
-          <a href="/pdf-to-jpg" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to JPG</a>
-          <a href="/jpg-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">JPG to PDF</a>
-          <a href="/protect" class="block px-4 py-2 hover:bg-gray-100 text-sm">Protect PDF</a>
-          <a href="/watermark" class="block px-4 py-2 hover:bg-gray-100 text-sm">Add Watermark</a>
-          <a href="/word-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">Word to PDF</a>
-          <a href="/pdf-to-word" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to Word</a>
-        </div>
-      </nav>
+        <h1 class="text-2xl font-bold text-red-500"><a href="/">PDFPro</a></h1>
+        <nav x-data="{ open: false }" class="relative">
+            <a href="/" class="text-gray-600 hover:text-black px-4">Home</a>
+            <button @click="open = !open" class="text-gray-700 hover:text-black px-4 focus:outline-none">Tools ▾</button>
+            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-50">
+                <a href="/merge" class="block px-4 py-2 hover:bg-gray-100 text-sm">Merge PDF</a>
+                <a href="/split" class="block px-4 py-2 hover:bg-gray-100 text-sm">Split PDF</a>
+                <a href="/compress" class="block px-4 py-2 hover:bg-gray-100 text-sm">Compress PDF</a>
+                <a href="/pdf-to-jpg" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to JPG</a>
+                <a href="/jpg-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">JPG to PDF</a>
+                <a href="/protect" class="block px-4 py-2 hover:bg-gray-100 text-sm">Protect PDF</a>
+                <a href="/watermark" class="block px-4 py-2 hover:bg-gray-100 text-sm">Add Watermark</a>
+                <a href="/word-to-pdf" class="block px-4 py-2 hover:bg-gray-100 text-sm">Word to PDF</a>
+                <a href="/pdf-to-word" class="block px-4 py-2 hover:bg-gray-100 text-sm">PDF to Word</a>
+            </div>
+        </nav>
     </header>
 
-    <!-- Flash Message -->
     <div x-data="{ show: false, msg: '', type: 'success' }"
-       x-init="() => {
-         const flash = '{{ get_flashed_messages()|join('||') }}';
-         if(flash.includes('||')) {
-           const [msgType, ...rest] = flash.split('||');
-           msg = rest.join('||');
-           type = msgType;
-           show = true;
-           setTimeout(() => show = false, 5000);
-         }
-       }"
-       @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
-       @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
-       class="flex-grow flex flex-col">
+         x-init="() => { const flash = '{{ get_flashed_messages()|join('||') }}';
+         if(flash.includes('||')) { const [msgType, ...rest] = flash.split('||');
+         msg = rest.join('||'); type = msgType; show = true; setTimeout(() => show = false, 5000); } }"
+         @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
+         @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
+         class="flex-grow flex flex-col">
+    </div>
 
-    <!-- Main Section with Ad Slots -->
     <main class="flex-grow flex justify-center items-center relative px-[180px]">
-
-      <!-- Left & Right Ads -->
-      <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
-      <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
-
-      <!-- Top & Bottom Ads inside Main -->
-      <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Top</div>
-      <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
-
-      <!-- Compress Form -->
-      <section class="bg-white/90 shadow-xl backdrop-blur-md rounded-xl p-8 max-w-md w-full z-30 mt-[110px] mb-[110px]">
-        <h2 class="text-2xl font-semibold text-center mb-4">Compress Any File</h2>
-        <p class="text-center text-gray-600 mb-6">Supports PDF, DOCX, JPG, PNG and more.</p>
-
-        <form action="{{ url_for('compress_route') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4" id="compressForm">
-          <input type="file" name="file" id="fileInput" required class="p-2 border rounded w-full"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt" onchange="checkIfProtected(this.files)" />
-
-          <div id="passwordField" class="hidden">
-            <input type="password" name="password" placeholder="Enter password for protected PDF"
-                  class="p-2 border rounded w-full" />
-          </div>
-
-          <div>
-            <label class="font-semibold">Target File Size</label>
-            <div class="flex gap-2">
-              <input type="number" name="target_size" min="10" class="p-2 border rounded w-full" placeholder="Enter size">
-              <select name="target_unit" class="p-2 border rounded">
-                <option value="kb">KB</option>
-                <option value="mb">MB</option>
-              </select>
-            </div>
-            <span class="text-xs text-gray-500">Set your desired output file size</span>
-          </div>
-
-          <div>
-            <label class="inline-flex items-center">
-              <input type="checkbox" name="lossless" value="1" class="mr-2">
-              <span class="font-semibold">Lossless Compression (no quality loss)</span>
-            </label>
-            <span class="block text-xs text-gray-500 mt-1">For images: PNG, for PDF: best quality, for DOCX: ZIP recompress</span>
-          </div>
-
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Compress & Download
-          </button>
-        </form>
-        {% if download_link %}
-        <div class="mt-4 text-center">
-          <a href="{{ download_link }}" download class="inline-block bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Download Compressed File</a>
-        </div>
-        {% endif %}
-        <script>
-          document.getElementById('compressForm').addEventListener('submit', function(e) {
-            setTimeout(function() {
-              document.getElementById('fileInput').value = '';
-            }, 1000);
-          });
-        </script>
-      </section>
+        <section class="bg-white/90 shadow-xl backdrop-blur-md rounded-xl p-8 max-w-md w-full z-30 mt-[110px] mb-[110px]">
+            <h2 class="text-2xl font-semibold text-center mb-4">Compress Any File</h2>
+            <p class="text-center text-gray-600 mb-6">Supports PDF, DOCX, JPG, PNG and more.</p>
+            <form action="{{ url_for('compress_route') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4" id="compressForm">
+                <input type="file" name="file" id="fileInput" required class="p-2 border rounded w-full"
+                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt" />
+                <div id="passwordField" class="hidden">
+                    <input type="password" name="password" placeholder="Enter password for protected PDF"
+                           class="p-2 border rounded w-full" />
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                    Compress & Download
+                </button>
+            </form>
+            <script>
+                document.getElementById('compressForm').addEventListener('submit', function() {
+                    setTimeout(() => this.reset(), 1000);
+                });
+            </script>
+        </section>
     </main>
 
-    <!-- Footer -->
     <footer class="text-center text-sm text-gray-600 py-4 bg-white mt-4">
-      &copy; 2025 PDFPro. Built by Dev Sharma.
+        &copy; 2025 PDFPro. Built by Dev Sharma.
     </footer>
 
-    <!-- JS to detect PDF protection -->
     <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const fileInput = document.querySelector('input[name="file"]');
-    const passwordField = document.getElementById("passwordField");
-
-    fileInput.addEventListener("change", function () {
-      const file = fileInput.files[0];
-      if (!file || !file.name.endsWith('.pdf')) {
-        passwordField.classList.add("hidden");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      fetch("/check-protection", {
-        method: "POST",
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.protected) {
-          passwordField.classList.remove("hidden");
-        } else {
-          passwordField.classList.add("hidden");
-        }
-      });
-    });
-  });
-  </script>
-    <script>
-      document.querySelector('form').addEventListener('submit', function (e) {
-        setTimeout(() => {
-          this.reset();
-          location.reload();
-        }, 500);
-      });
+        document.addEventListener("DOMContentLoaded", function() {
+            const fileInput = document.getElementById('fileInput');
+            const passwordField = document.getElementById('passwordField');
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+                    passwordField.classList.add('hidden');
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('file', file);
+                fetch('/check-protection', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    passwordField.classList.toggle('hidden', !data.protected);
+                })
+                .catch(() => passwordField.classList.add('hidden'));
+            });
+        });
     </script>
-
-  </body>
-  </html>
+</body>
+</html>

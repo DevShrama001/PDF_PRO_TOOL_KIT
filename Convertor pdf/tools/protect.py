@@ -1,34 +1,54 @@
 import os
+import sys
+import importlib
+import types
+import pytest
+from PyPDF2 import PdfReader, PdfWriter
 import uuid
-import pikepdf
 
-def handle_protect(input_path, password: str):
+class DummyPDF:
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        pass
+    def save(self, output_path, encryption=None):
+        with open(output_path, "wb") as f:
+            f.write(b"PDF")
+
+def test_handle_protect_masks_password(tmp_path, monkeypatch, capsys):
+    input_pdf = tmp_path / "in.pdf"
+    input_pdf.write_bytes(b"%PDF-1.4\n%%EOF")
+
+    # monkeypatch pikepdf.open and pikepdf.Encryption
+    dummy_module = types.SimpleNamespace(
+        open=lambda path: DummyPDF(),
+        Encryption=lambda owner, user, R: None,
+    )
+    monkeypatch.setitem(sys.modules, 'pikepdf', dummy_module)
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    import Convertor_pdf.tools.protect as protect
+    importlib.reload(protect)
+
+    out_path = protect.handle_protect(str(input_pdf), "secret")
+
+    captured = capsys.readouterr().out
+    assert "secret" not in captured
+    assert os.path.exists(out_path)
+    os.remove(out_path)
+
+def handle_protect(input_pdf_path, password):
     """
-    Protect an uploaded PDF with a password using AES-256 encryption.
-    :param input_path: Path to uploaded PDF file
-    :param password: string password to encrypt PDF
-    :return: path to encrypted PDF
+    Protects a PDF file with a password and returns the output file path.
     """
-    # Avoid logging the raw password for security reasons
-    masked_pw = '*' * len(password) if password else ''
-    print(f"[DEBUG] handle_protect: input_path={input_path}, password=<{masked_pw}>")
-    OUTPUT_DIR = 'output'
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(os.path.dirname(input_pdf_path), f'protected_{uuid.uuid4().hex}.pdf')
     try:
-        if not os.path.exists(input_path):
-            raise Exception(f"Input file does not exist: {input_path}")
-        if os.path.getsize(input_path) == 0:
-            raise Exception(f"Input file is empty: {input_path}")
-        output_filename = f'protected_{uuid.uuid4().hex}.pdf'
-        output_path = os.path.join(OUTPUT_DIR, output_filename)
-        with pikepdf.open(input_path) as pdf:
-            pdf.save(output_path, encryption=pikepdf.Encryption(owner=password, user=password, R=6))
-        print(f"[DEBUG] handle_protect: Output written to {output_path}")
+        reader = PdfReader(input_pdf_path)
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        writer.encrypt(password)
+        with open(output_path, 'wb') as f_out:
+            writer.write(f_out)
         return output_path
     except Exception as e:
-        print(f"[DEBUG] handle_protect: Exception: {e}")
-        raise Exception(
-            "error||PDF protection failed: "
-            + str(e)
-            + "\nNote: Some PDFs may use unsupported or proprietary encryption. Only standard password protection (RC4, AES-128, AES-256) is supported. For best results, use PDFs created or saved with common tools like Adobe Acrobat."
-        )
+        raise Exception(f"Failed to protect PDF: {str(e)}")

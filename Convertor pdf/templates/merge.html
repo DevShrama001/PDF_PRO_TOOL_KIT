@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF to JPG – PDFPro</title>
+  <title>Merge PDF – PDFPro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
@@ -35,7 +35,6 @@
   </style>
 </head>
 <body class="bg-animated text-gray-800 min-h-screen flex flex-col">
-
   <!-- Header -->
   <header class="bg-white/80 shadow-md px-6 py-4 flex justify-between items-center">
     <h1 class="text-2xl font-bold text-red-500"><a href="/">PDFPro</a></h1>
@@ -58,7 +57,6 @@
       </div>
     </nav>
   </header>
-
   <!-- Flash Message -->
   <div x-data="{ show: false, msg: '', type: 'success' }"
        x-init="() => {
@@ -74,32 +72,21 @@
        @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
        @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
        class="flex-grow flex flex-col">
-
     <!-- Main Content with Ad Boxes -->
     <main class="flex-grow flex justify-center items-center relative px-[180px]">
-
       <!-- Ad Boxes -->
       <div class="absolute top-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Top</div>
       <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
       <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
       <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
-
       <!-- Form Section -->
       <section class="bg-white/90 shadow-xl backdrop-blur-md rounded-xl p-8 max-w-md w-full z-30 mt-[110px] mb-[110px]">
-        <h2 class="text-2xl font-semibold text-center mb-4">Convert PDF to JPG</h2>
-        <p class="text-center text-gray-600 mb-6">Generate high-quality JPG images from your PDF pages.</p>
-
-        <form action="{{ url_for('pdf_to_jpg_route') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
-          <input type="file" name="pdf" accept="application/pdf" required
-                 class="p-2 border rounded w-full" onchange="document.getElementById('passwordField').classList.remove('hidden')">
-          <div id="passwordField" class="hidden">
-            <input type="password" name="password" placeholder="Password (if PDF is protected)"
-                   class="p-2 border rounded w-full mt-2" />
-          </div>
-          <button type="submit"
-                  class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-            Convert Now
-          </button>
+        <h2 class="text-2xl font-semibold text-center mb-4">Merge PDF Files</h2>
+        <p class="text-center text-gray-600 mb-6">Combine multiple PDF files into a single document. Order matters: files will be merged in the order you select them.</p>
+        <form action="{{ url_for('merge_route') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
+          <input type="file" name="pdfs" accept="application/pdf" multiple required class="p-2 border rounded w-full">
+          <input type="password" name="password" placeholder="Password (if PDFs are protected)" class="p-2 border rounded w-full mt-2" />
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Merge Now</button>
         </form>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
@@ -112,28 +99,13 @@
         {% endwith %}
       </section>
     </main>
-
     <!-- Footer -->
     <footer class="text-center text-sm text-gray-600 py-4 bg-white mt-4">
       &copy; 2025 PDFPro. Built by Dev Sharma.
     </footer>
-
     <!-- JavaScript to handle form submission and page reload -->
     <script>
-      document.querySelector('form').addEventListener('submit', function (e) {
-        setTimeout(() => {
-          this.reset();
-          location.reload();
-        }, 500);
-      });
-
-      // Listen for custom events to show messages using Alpine.js event system
-      window.addEventListener('show-success', function(e) {
-        window.dispatchEvent(new CustomEvent('show-success', { detail: e.detail }));
-      });
-      window.addEventListener('show-error', function(e) {
-        window.dispatchEvent(new CustomEvent('show-error', { detail: e.detail }));
-      });
+      // No auto-reload for merge tool
     </script>
   </div>
 </body>

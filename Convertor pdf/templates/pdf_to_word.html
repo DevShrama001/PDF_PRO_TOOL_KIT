@@ -31,6 +31,46 @@
       font-size: 12px;
       color: #333;
     }
+    /* PDF to Word custom styles */
+    .pdf2word-section {
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 2.5rem 2rem;
+      max-width: 480px;
+      margin: 2rem auto;
+    }
+    .pdf2word-section h2 {
+      color: #2563eb;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .pdf2word-section p {
+      color: #555;
+      margin-bottom: 1.5rem;
+    }
+    .pdf2word-section input[type="file"] {
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+    .pdf2word-section button {
+      background: linear-gradient(90deg, #2563eb 0%, #f43f5e 100%);
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .pdf2word-section button:hover {
+      background: linear-gradient(90deg, #1d4ed8 0%, #be123c 100%);
+    }
   </style>
 </head>
 <body class="bg-animated min-h-screen flex flex-col">
@@ -53,7 +93,7 @@
     </nav>
   </header>
   <div x-data="{ show: false, msg: '', type: 'success' }"
-       x-init="() => { const flash = '{{ get_flashed_messages()|join(''||') }}'; if(flash.includes('||')) { const [msgType, ...rest] = flash.split('||'); msg = rest.join('||'); type = msgType; show = true; setTimeout(() => show = false, 5000); } }"
+       x-init="() => { const flash = '{{ get_flashed_messages()|join('&#124;&#124;') }}'; if(flash.includes('||')) { const [msgType, ...rest] = flash.split('||'); msg = rest.join('||'); type = msgType; show = true; setTimeout(() => show = false, 5000); } }"
        @show-success.window="msg = $event.detail || 'Success!'; type = 'success'; show = true; setTimeout(() => show = false, 5000);"
        @show-error.window="msg = $event.detail || 'Error!'; type = 'error'; show = true; setTimeout(() => show = false, 5000);"
        class="flex-grow flex flex-col">
@@ -65,13 +105,15 @@
       <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 ad-box w-[600px] h-[80px] z-20">Google Ad Bottom</div>
       <div class="absolute left-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Left</div>
       <div class="absolute right-2 top-1/2 transform -translate-y-1/2 ad-box w-[160px] h-[450px] hidden xl:flex">Google Ad Right</div>
-      <section class="bg-white p-10 rounded-xl shadow-xl max-w-md w-full z-30 mt-[110px] mb-[110px] flex flex-col items-center justify-center">
-        <h2 class="text-2xl font-semibold text-center mb-4">PDF to Word</h2>
-        <p class="text-center text-gray-600 mb-6">Extract text and images from PDF into a .docx file.</p>
+      <section class="pdf2word-section flex flex-col items-center justify-center">
+        <h2>PDF to Word</h2>
+        <p class="text-center">Extract text and basic formatting from PDF into a .docx file.<br><span class="text-xs text-gray-400">(Supports bold, italic, font size, and color)</span></p>
         <form method="POST" enctype="multipart/form-data" class="flex flex-col gap-4 w-full" id="pdfForm">
-          <input id="pdfInput" type="file" name="pdf" accept="application/pdf" required class="p-2 border rounded w-full">
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Convert Now</button>
+          <input id="pdfInput" type="file" name="pdf" accept="application/pdf" required>
+          <button type="submit">Convert Now</button>
         </form>
+        <div id="pdfError" class="mt-2 text-sm text-red-600 hidden"></div>
+        <div class="mt-4 text-xs text-gray-500">Advanced conversion: formatting, font size, and color are preserved where possible.</div>
       </section>
     </main>
   </div>
@@ -80,9 +122,29 @@
   </footer>
   <script>
     document.getElementById('pdfForm').addEventListener('submit', function (e) {
-      setTimeout(() => {
-        this.reset();
-      }, 500);
+      const fileInput = document.getElementById('pdfInput');
+      const errorDiv = document.getElementById('pdfError');
+      errorDiv.classList.add('hidden');
+      errorDiv.textContent = '';
+      if (!fileInput.files.length) {
+        e.preventDefault();
+        errorDiv.textContent = 'Please select a PDF file.';
+        errorDiv.classList.remove('hidden');
+        return false;
+      }
+      const file = fileInput.files[0];
+      if (file.size === 0) {
+        e.preventDefault();
+        errorDiv.textContent = 'The selected file is empty. Please choose a valid PDF.';
+        errorDiv.classList.remove('hidden');
+        return false;
+      }
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        e.preventDefault();
+        errorDiv.textContent = 'The selected file is not a PDF. Please choose a .pdf file.';
+        errorDiv.classList.remove('hidden');
+        return false;
+      }
     });
   </script>
 </body>

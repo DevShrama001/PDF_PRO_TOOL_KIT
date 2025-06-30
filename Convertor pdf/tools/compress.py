@@ -55,34 +55,58 @@ def handle_compress(file, password="", target_size=None, target_unit="kb", lossl
                 with open(output_path, "wb") as f_out:
                     writer.write(f_out)
             except Exception as e:
+                # Clean up temp files on error
+                if os.path.exists(input_path):
+                    os.remove(input_path)
                 raise e
             # Always try Ghostscript for compression
             try:
                 import subprocess, shutil as sh
-                gs_executables = ['gs', 'gswin64c', 'gswin32c']
+                # Allow manual override via environment variable
+                gs_env_path = os.environ.get('GHOSTSCRIPT_PATH')
+                gs_executables = []
+                if gs_env_path:
+                    gs_executables.append(gs_env_path)
+                gs_executables += ['gs', 'gswin64c', 'gswin32c']
                 gs_path = None
                 for exe in gs_executables:
                     if sh.which(exe):
                         gs_path = exe
                         break
                 if not gs_path:
-                    raise Exception("Ghostscript not found. Please install Ghostscript and add it to your PATH.")
+                    if os.path.exists(input_path):
+                        os.remove(input_path)
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+                    raise Exception("Ghostscript not found. Please install Ghostscript and add it to your PATH, or set the GHOSTSCRIPT_PATH environment variable to the full path of gswin32c.exe or gswin64c.exe.")
                 gs_output = output_path.replace('.pdf', '_gs.pdf')
+                # Use /screen for most aggressive compression
                 gs_cmd = [
                     gs_path, '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',
-                    f'-dPDFSETTINGS={'/prepress' if lossless else '/ebook'}',
+                    '-dPDFSETTINGS=/screen',
                     '-dNOPAUSE', '-dQUIET', '-dBATCH',
                     f'-sOutputFile={gs_output}', output_path
                 ]
                 result = subprocess.run(gs_cmd, capture_output=True)
                 if result.returncode != 0:
+                    if os.path.exists(input_path):
+                        os.remove(input_path)
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+                    if os.path.exists(gs_output):
+                        os.remove(gs_output)
                     raise Exception(f"Ghostscript compression failed: {result.stderr.decode(errors='ignore')}")
-                if os.path.exists(gs_output) and os.path.getsize(gs_output) < os.path.getsize(output_path):
+                # Always keep the Ghostscript output, even if not smaller
+                if os.path.exists(gs_output):
                     os.replace(gs_output, output_path)
-                elif os.path.exists(gs_output):
-                    os.remove(gs_output)
             except Exception as e:
+                if os.path.exists(input_path):
+                    os.remove(input_path)
+                if os.path.exists(output_path):
+                    os.remove(output_path)
                 raise Exception(f"PDF compression failed: {str(e)}")
+            if os.path.exists(input_path):
+                os.remove(input_path)
 
         elif ext in [".jpg", ".jpeg", ".png"]:
             img = Image.open(input_path)
@@ -108,7 +132,15 @@ def handle_compress(file, password="", target_size=None, target_unit="kb", lossl
                         rgb_img = rgb_img.resize((int(rgb_img.width * 0.9), int(rgb_img.height * 0.9)), Image.LANCZOS)
                         rgb_img.save(output_path, optimize=True, quality=quality)
                     if os.path.getsize(output_path) > target_bytes:
+                        if os.path.exists(input_path):
+                            os.remove(input_path)
+                        if os.path.exists(output_path):
+                            os.remove(output_path)
                         raise Exception("Image could not be compressed to the requested size. Try a smaller target or lower quality.")
+            if os.path.exists(input_path):
+                os.remove(input_path)
+            # Return output_path for direct download
+            return output_path
 
         elif ext in [".docx", ".doc"]:
             if not lossless:
@@ -126,8 +158,16 @@ def handle_compress(file, password="", target_size=None, target_unit="kb", lossl
                 else:
                     target_bytes = int(target_size) * 1024
                 if os.path.getsize(output_path) > target_bytes:
+                    if os.path.exists(input_path):
+                        os.remove(input_path)
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
                     raise Exception("DOCX could not be compressed to the requested size. Try a smaller target or lower quality images.")
+            if os.path.exists(input_path):
+                os.remove(input_path)
         else:
+            if os.path.exists(input_path):
+                os.remove(input_path)
             raise Exception("Unsupported file format")
 
         # Final check: if output is not smaller, warn
@@ -137,12 +177,16 @@ def handle_compress(file, password="", target_size=None, target_unit="kb", lossl
             else:
                 target_bytes = int(target_size) * 1024
             if os.path.getsize(output_path) > target_bytes:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
                 raise Exception("File could not be compressed to the requested size. Try a smaller target or lower quality.")
         # If output is not smaller than input, warn
-        if os.path.getsize(output_path) >= os.path.getsize(input_path):
-            pass  # Let the frontend show the actual size
+        # (Do not delete output, just warn)
     except Exception as e:
-        # On error, copy the original file to output for download, but raise error for feedback
-        shutil.copy(input_path, output_path)
+        # On error, clean up and raise error for feedback
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        if os.path.exists(output_path):
+            os.remove(output_path)
         raise e
     return output_path

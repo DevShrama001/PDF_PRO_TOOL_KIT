@@ -90,32 +90,46 @@
           body: formData
         });
         if (response.ok) {
-          // Try to get filename from Content-Disposition
-          const disposition = response.headers.get('Content-Disposition');
-          let filename = 'output.pdf';
-          if (disposition && disposition.indexOf('filename=') !== -1) {
-            filename = disposition.split('filename=')[1].replace(/['"]/g, '').split(';')[0];
+          const contentType = response.headers.get('Content-Type');
+          if (contentType && contentType.includes('application/pdf')) {
+            // Try to get filename from Content-Disposition
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = 'output.pdf';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+              filename = disposition.split('filename=')[1].replace(/['"]/g, '').split(';')[0];
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+            }, 100);
+            window.dispatchEvent(new CustomEvent('show-success', { detail: 'Word converted to PDF successfully.' }));
+            clearAllMessagesAndOutput();
+          } else {
+            const text = await response.text();
+            window.dispatchEvent(new CustomEvent('show-error', { detail: text || 'Conversion failed.' }));
+            clearAllMessagesAndOutput();
           }
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          }, 100);
-          window.dispatchEvent(new CustomEvent('show-success', { detail: 'Word converted to PDF successfully.' }));
         } else {
           const text = await response.text();
           window.dispatchEvent(new CustomEvent('show-error', { detail: text || 'Conversion failed.' }));
+          clearAllMessagesAndOutput();
         }
       } catch (err) {
-        window.dispatchEvent(new CustomEvent('show-error', { detail: 'Network error.' }));
+        let msg = 'Network error.';
+        if (err && err.message) {
+          msg = err.message;
+        }
+        window.dispatchEvent(new CustomEvent('show-error', { detail: msg }));
+        clearAllMessagesAndOutput();
       }
-      clearAllMessagesAndOutput();
+      // Do NOT call clearAllMessagesAndOutput() before fetch!
     });
     function clearAllMessagesAndOutput() {
       window.dispatchEvent(new CustomEvent('show-success', { detail: '' }));

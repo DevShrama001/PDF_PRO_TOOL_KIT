@@ -1,5 +1,4 @@
 from PyPDF2 import PdfReader, PdfWriter, errors
-from flask import flash
 import os
 import uuid
 
@@ -26,9 +25,7 @@ def handle_split(file, start, end, password=None):
         return output_path
 
     except errors.FileNotDecryptedError:
-        flash("error||Password is incorrect, please try again.")
         return None
 
     except Exception as e:
-        flash(f"error||Something went wrong: {str(e)}")
         return None

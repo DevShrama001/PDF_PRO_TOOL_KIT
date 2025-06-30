@@ -89,13 +89,13 @@ def handle_watermark(file, watermark_text=None, image=None, font="Helvetica", co
             elif image:
                 image_bytes = image.read()
                 if not image_bytes:
-                    raise Exception("error||No image data provided for watermark.")
+                    raise Exception("No image data provided for watermark.")
                 watermark_pdf = create_image_watermark_pdf(image_bytes, opacity, img_position, page_size, img_scale)
             else:
-                raise Exception("error||No watermark text or image provided.")
+                raise Exception("No watermark text or image provided.")
 
             if not watermark_pdf.pages:
-                raise Exception("error||Watermark PDF has no pages.")
+                raise Exception("Watermark PDF has no pages.")
 
             page.merge_page(watermark_pdf.pages[0])
             writer.add_page(page)
@@ -107,4 +107,4 @@ def handle_watermark(file, watermark_text=None, image=None, font="Helvetica", co
         return output_path
 
     except Exception as e:
-        raise Exception(f"error||Watermarking failed: {str(e)}")
+        raise Exception(f"Watermarking failed: {str(e)}")

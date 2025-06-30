@@ -1,45 +1,21 @@
-from PyPDF2 import PdfMerger, PdfReader, errors
 import os
+import shutil
 import uuid
+from PyPDF2 import PdfMerger
 
-def handle_merge(files, password=None):
-    """Merge a sequence of uploaded PDFs into a single PDF."""
+def handle_merge(files):
+    """
+    Merges multiple PDF files into a single PDF and saves it to the output directory.
+    Returns the output file path.
+    """
+    output_dir = os.path.join(os.getcwd(), 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f'merged_{uuid.uuid4().hex}.pdf')
     merger = PdfMerger()
-    temp_paths = []
-
-    # Ensure required directories exist
-    UPLOAD_DIR = 'uploads'
-    OUTPUT_DIR = 'output'
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    try:
-        # Save uploaded files with unique names
-        for f in files:
-            ext = os.path.splitext(f.filename)[1]
-            path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex}{ext}")
-            f.save(path)
-            temp_paths.append(path)
-
-        for path in temp_paths:
-            reader = PdfReader(path)
-
-            if reader.is_encrypted:
-                # Try to decrypt using the provided password
-                if not password or not reader.decrypt(password):
-                    raise ValueError("error@@Password is incorrect. Please try again.")
-
-            merger.append(reader, import_outline=False)
-
-        # Save merged file
-        output_file = os.path.join(OUTPUT_DIR, f"merged_{uuid.uuid4().hex}.pdf")
-        with open(output_file, 'wb') as out:
-            merger.write(out)
-
-        return output_file
-
-    finally:
-        merger.close()
-        for p in temp_paths:
-            if os.path.exists(p):
-                os.remove(p)
+    for file in files:
+        file_path = file if isinstance(file, str) else getattr(file, '_path', None)
+        if file_path and os.path.exists(file_path):
+            merger.append(file_path)
+    merger.write(output_path)
+    merger.close()
+    return output_path

@@ -1,0 +1,40 @@
+/* PDF to Word custom styles */
+.pdf2word-section {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 2.5rem 2rem;
+  max-width: 480px;
+  margin: 2rem auto;
+}
+.pdf2word-section h2 {
+  color: #2563eb;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.pdf2word-section p {
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+.pdf2word-section input[type="file"] {
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+.pdf2word-section button {
+  background: linear-gradient(90deg, #2563eb 0%, #f43f5e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pdf2word-section button:hover {
+  background: linear-gradient(90deg, #1d4ed8 0%, #be123c 100%);
+}
